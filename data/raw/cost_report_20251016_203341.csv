@@ -1,0 +1,17 @@
+plan,stage,merge_group,task_name,model_key,tokens_in,tokens_out,monthly_cost
+MIN,S1,S1_retrieve,Corpus Embedding (one-time),openai/gpt-4o,200.0,80.0,88.0
+MIN,S1,S1_retrieve,Incremental Embedding (delta),openai/gpt-4o,200.0,80.0,88.0
+MIN,S4,S4_agentic,Multi-Tool Router,openai/gpt-4o,700.0,300.0,320.0
+MIN,S4,S4_agentic,Tool-Using Agent (Search+Calc),openai/gpt-4o,700.0,300.0,320.0
+MIN,S0,S0_ie,Medical Entity Extraction,google/gemini-1.5-pro,600.0,120.0,192.0
+MIN,S0,S0_ie,Keyphrase Extraction,google/gemini-1.5-pro,600.0,120.0,192.0
+MIN,S3,S3_summary,Medical Report Summary,openai/gpt-4.1-mini,1200.0,200.0,360.0
+MIN,S3,S3_domain,Medical Note Expansion,mistral/mistral-large,900.0,600.0,540.0
+MAX,S1,S1_retrieve,Corpus Embedding (one-time),openai/gpt-4o,200.0,80.0,88.0
+MAX,S1,S1_retrieve,Incremental Embedding (delta),openai/gpt-4o,200.0,80.0,88.0
+MAX,S4,S4_agentic,Multi-Tool Router,openai/gpt-4o,700.0,300.0,320.0
+MAX,S4,S4_agentic,Tool-Using Agent (Search+Calc),openai/gpt-4o,700.0,300.0,320.0
+MAX,S0,S0_ie,Medical Entity Extraction,google/gemini-1.5-pro,600.0,120.0,192.0
+MAX,S0,S0_ie,Keyphrase Extraction,google/gemini-1.5-pro,600.0,120.0,192.0
+MAX,S3,S3_summary,Medical Report Summary,openai/gpt-4.1-mini,1200.0,200.0,360.0
+MAX,S3,S3_domain,Medical Note Expansion,mistral/mistral-large,900.0,600.0,540.0

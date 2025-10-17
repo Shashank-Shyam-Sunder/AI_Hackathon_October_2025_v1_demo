@@ -1,0 +1,195 @@
+{
+  "app_brief": "I want to build a medical information system for outpatient care.",
+  "traffic": {
+    "users": 1000,
+    "qpm": 100
+  },
+  "ops": {
+    "availability_target": 99.0,
+    "monitoring_tier": "Enhanced",
+    "compliance": "None"
+  },
+  "preferences": {
+    "hosting": "self_host",
+    "fine_tuning": "required",
+    "domain": "medical"
+  },
+  "rag": {
+    "enabled": true,
+    "corpus_gb": 100.0,
+    "embed_model": "text-embedding-3-large",
+    "refresh_rate": "monthly",
+    "avg_chunk_tokens": 500
+  },
+  "i18n": {
+    "translation_required": false,
+    "language_pairs": null
+  },
+  "agentic": {
+    "enabled": true,
+    "num_tools": 2,
+    "chain_depth": 4,
+    "avg_steps": 6
+  },
+  "detected_tasks": [
+    {
+      "id": 69,
+      "stage": "S1",
+      "parent_category": "Retrieval & Vector Indexing",
+      "task_name": "Corpus Embedding (one-time)",
+      "merge_group": "S1_retrieve",
+      "merge_compatible": false,
+      "confidence": 3.0,
+      "reasons": [],
+      "model_profile": {
+        "key": "openai/gpt-4o",
+        "tier": "large",
+        "context_window": "128000"
+      },
+      "ask_for": []
+    },
+    {
+      "id": 70,
+      "stage": "S1",
+      "parent_category": "Retrieval & Vector Indexing",
+      "task_name": "Incremental Embedding (delta)",
+      "merge_group": "S1_retrieve",
+      "merge_compatible": false,
+      "confidence": 3.0,
+      "reasons": [],
+      "model_profile": {
+        "key": "openai/gpt-4.1-mini",
+        "tier": "medium",
+        "context_window": "200000"
+      },
+      "ask_for": []
+    },
+    {
+      "id": 186,
+      "stage": "S4",
+      "parent_category": "Orchestration & Tool Use",
+      "task_name": "Multi-Tool Router",
+      "merge_group": "S4_agentic",
+      "merge_compatible": false,
+      "confidence": 3.0,
+      "reasons": [],
+      "model_profile": {
+        "key": "openai/gpt-4o",
+        "tier": "large",
+        "context_window": "128000"
+      },
+      "ask_for": [
+        "tokens_in",
+        "tokens_out"
+      ]
+    },
+    {
+      "id": 185,
+      "stage": "S4",
+      "parent_category": "Orchestration & Tool Use",
+      "task_name": "Tool-Using Agent (Search+Calc)",
+      "merge_group": "S4_agentic",
+      "merge_compatible": false,
+      "confidence": 3.0,
+      "reasons": [],
+      "model_profile": {
+        "key": "openai/gpt-4o-mini",
+        "tier": "medium",
+        "context_window": "128000"
+      },
+      "ask_for": [
+        "tokens_in",
+        "tokens_out"
+      ]
+    },
+    {
+      "id": 16,
+      "stage": "S0",
+      "parent_category": "Information Extraction & Structuring",
+      "task_name": "Medical Entity Extraction",
+      "merge_group": "S0_ie",
+      "merge_compatible": false,
+      "confidence": 0.333,
+      "reasons": [
+        "keyword overlap: information, medical"
+      ],
+      "model_profile": {
+        "key": "google/gemini-1.5-pro",
+        "tier": "large",
+        "context_window": "1000000"
+      },
+      "ask_for": [
+        "tokens_in",
+        "tokens_out",
+        "classes",
+        "schema_fields"
+      ]
+    },
+    {
+      "id": 2,
+      "stage": "S0",
+      "parent_category": "Information Extraction & Structuring",
+      "task_name": "Keyphrase Extraction",
+      "merge_group": "S0_ie",
+      "merge_compatible": false,
+      "confidence": 0.2,
+      "reasons": [
+        "keyword overlap: information"
+      ],
+      "model_profile": {
+        "key": "mistral/mistral-medium",
+        "tier": "medium",
+        "context_window": "32000"
+      },
+      "ask_for": [
+        "tokens_in",
+        "tokens_out",
+        "classes",
+        "schema_fields"
+      ]
+    },
+    {
+      "id": 142,
+      "stage": "S3",
+      "parent_category": "Summarization & Reasoning",
+      "task_name": "Medical Report Summary",
+      "merge_group": "S3_summary",
+      "merge_compatible": true,
+      "confidence": 0.167,
+      "reasons": [
+        "keyword overlap: medical"
+      ],
+      "model_profile": {
+        "key": "openai/gpt-4.1-mini",
+        "tier": "medium",
+        "context_window": "200000"
+      },
+      "ask_for": [
+        "tokens_in",
+        "tokens_out"
+      ]
+    },
+    {
+      "id": 123,
+      "stage": "S3",
+      "parent_category": "Domain-Specific Writing & Analysis",
+      "task_name": "Medical Note Expansion",
+      "merge_group": "S3_domain",
+      "merge_compatible": false,
+      "confidence": 0.143,
+      "reasons": [
+        "keyword overlap: medical"
+      ],
+      "model_profile": {
+        "key": "mistral/mistral-large",
+        "tier": "large",
+        "context_window": "64000"
+      },
+      "ask_for": [
+        "tokens_in",
+        "tokens_out",
+        "domain_flag"
+      ]
+    }
+  ]
+}

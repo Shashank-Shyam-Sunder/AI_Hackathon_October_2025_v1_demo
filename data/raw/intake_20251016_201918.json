@@ -1,0 +1,35 @@
+{
+  "app_brief": "I want to build a medical information system for outpatient care.",
+  "traffic": {
+    "users": 1000,
+    "qpm": 100
+  },
+  "ops": {
+    "availability_target": 99.0,
+    "monitoring_tier": "Enhanced",
+    "compliance": "None"
+  },
+  "preferences": {
+    "hosting": "self_host",
+    "fine_tuning": "required",
+    "domain": "medical"
+  },
+  "rag": {
+    "enabled": true,
+    "corpus_gb": 100.0,
+    "embed_model": "text-embedding-3-large",
+    "refresh_rate": "monthly",
+    "avg_chunk_tokens": 500
+  },
+  "i18n": {
+    "translation_required": false,
+    "language_pairs": null
+  },
+  "agentic": {
+    "enabled": true,
+    "num_tools": 2,
+    "chain_depth": 4,
+    "avg_steps": 6
+  },
+  "detected_tasks": []
+}
