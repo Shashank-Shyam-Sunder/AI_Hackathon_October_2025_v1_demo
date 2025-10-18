@@ -1,0 +1,37 @@
+# ===========================================================
+# AI Cost Estimator - Optimized Docker Compose
+# ===========================================================
+
+services:
+  app:
+    build:
+      context: .                # build from current directory
+      dockerfile: Dockerfile    # explicit for clarity
+    image: aicost               # local image name
+    container_name: aicost
+    command: ["python", "-m", "src.app.cli.pipeline"]
+
+    # 🔁 Rebuild the container automatically when source code changes (dev convenience)
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+        - action: rebuild
+          path: ./requirements
+
+    # 📂 Mount data folder so outputs persist locally
+    volumes:
+      - ./data:/app/data
+
+    # 🧠 Interactive terminal support (for CLI input)
+    stdin_open: true
+    tty: true
+
+    # 🌍 Environment variables (future flexibility)
+    environment:
+      PYTHONUNBUFFERED: "1"
+      OUTPUT_DIR: "/app/data/out"
+
+    # 🧹 Clean log output
+    restart: "no"

@@ -2,26 +2,35 @@
 """
 task_detect.py — Step 2: Detect candidate tasks from the intake brief using the 200-row catalog.
 
-Inputs:
-  - data/raw/intake_*.json (latest by default)
+Inputs (default behavior):
+  - data/out/<run>/intake_*.json   (latest in the chosen run dir if not provided)
   - data/raw/AI_Cost_Estimator_Task_Catalog_200rows_v2.csv
 
 Outputs:
-  - data/raw/detected_<timestamp>.json    # proposed tasks + reasons + missing fields to ask next
+  - data/out/<run>/detected_<timestamp>.json
 
-Stdlib only (uses csv + json). No pandas dependency.
+Stdlib only (csv/json). Relative imports only.
 """
 
+from __future__ import annotations
+
+import argparse
 import csv
 import json
 import os
 import re
-import sys
-from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Any, Tuple, Optional
 
+# 🔧 relative, UI-agnostic helpers (run folders + paths)
+from ..utils.io_paths import (
+    RAW_DIR,                 # data/raw (catalog)
+    resolve_run_dir,         # pick a run dir (explicit or latest)
+    require_latest_in,       # get latest intake_* in that run
+    next_out_path,           # build detected_<ts>.json in same run
+)
+
 CATALOG_FILENAME = "AI_Cost_Estimator_Task_Catalog_200rows_v2.csv"
-RAW_DIR = os.path.join("data", "raw")
 
 STOPWORDS = {
     "the","a","an","and","or","of","to","for","with","on","in","by","at","from","that","this","it","its",
@@ -55,58 +64,40 @@ INTAKE_SIGNALS = [
     ("agentic.enabled", True, ("S4_agentic", 3.0)),
 ]
 
-def now_ts() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
+# ---------------- core helpers ----------------
 
-def latest_file(prefix: str) -> Optional[str]:
-    files = [f for f in os.listdir(RAW_DIR) if f.startswith(prefix)]
-    if not files:
-        return None
-    files.sort(reverse=True)
-    return os.path.join(RAW_DIR, files[0])
-
-def load_intake(path: Optional[str]) -> Dict[str, Any]:
-    if path is None:
-        path = latest_file("intake_")
-        if path is None:
-            sys.exit("No intake_*.json found in data/raw/. Run src/cli_intake.py first.")
-    with open(path, "r", encoding="utf-8") as f:
+def load_intake(intake_path: Path) -> Dict[str, Any]:
+    with intake_path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 def load_catalog() -> List[Dict[str, Any]]:
-    cat_path = os.path.join(RAW_DIR, CATALOG_FILENAME)
-    if not os.path.exists(cat_path):
-        sys.exit(f"Catalog not found: {cat_path}")
-    rows = []
-    with open(cat_path, "r", encoding="utf-8") as f:
+    cat_path = RAW_DIR / CATALOG_FILENAME
+    if not cat_path.exists():
+        raise SystemExit(f"Catalog not found: {cat_path}")
+    rows: List[Dict[str, Any]] = []
+    with cat_path.open("r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        for r in reader:
-            rows.append(r)
+        rows.extend(reader)
     return rows
 
 def tokenize(text: str) -> List[str]:
     text = text.lower()
-    # keep alphanum & plus/arrows for language pairs
     tokens = re.findall(r"[a-z0-9\+\-→_]+", text)
     return [t for t in tokens if t and t not in STOPWORDS]
 
 def row_keywords(row: Dict[str, Any]) -> List[str]:
-    # Build simple keyword bag from task_name + parent_category + merge_group
     parts = f"{row.get('task_name','')} {row.get('parent_category','')} {row.get('merge_group','')}"
     return tokenize(parts)
 
 def score_row(app_tokens: List[str], row_tokens: List[str]) -> float:
-    # Simple overlap score with diminishing returns for repeats
     hits = 0.0
     row_set = set(row_tokens)
     for t in app_tokens:
         if t in row_set:
             hits += 1.0
-    # Normalize by a small factor to keep scores modest
     return hits / (len(row_set) + 1e-6)
 
 def get_field(d: Dict[str, Any], path: str, default=None):
-    # path like "rag.enabled"
     cur = d
     for key in path.split("."):
         if not isinstance(cur, dict) or key not in cur:
@@ -125,7 +116,6 @@ def propose_tasks(intake: Dict[str, Any], catalog: List[Dict[str, Any]], top_k_p
     app_brief = intake.get("app_brief", "")
     app_tokens = tokenize(app_brief)
 
-    # Score every row
     scored: List[Tuple[float, Dict[str, Any], List[str]]] = []
     for row in catalog:
         rk = row_keywords(row)
@@ -133,30 +123,22 @@ def propose_tasks(intake: Dict[str, Any], catalog: List[Dict[str, Any]], top_k_p
         reasons = []
         if s > 0:
             reasons.append("keyword overlap: " + ", ".join(sorted(set(app_tokens).intersection(rk))[:6]))
-        # small bonus for stage alignment by inferred hints (optional)
         scored.append((s, row, reasons))
 
-    # Aggregate by merge_group: pick top-k rows with highest scores
     by_group: Dict[str, List[Tuple[float, Dict[str, Any], List[str]]]] = {}
     for s, row, reasons in scored:
         mg = row.get("merge_group", "")
         by_group.setdefault(mg, []).append((s, row, reasons))
 
-    # Intake-driven boosts for certain groups (RAG/Translation/Agentic)
-    base_boosts = {}
-    boosts = apply_intake_signals(intake, base_boosts)
-
+    boosts = apply_intake_signals(intake, {})
     proposals: List[Dict[str, Any]] = []
     for mg, lst in by_group.items():
-        # sort by score desc and apply group boost at selection time
         lst.sort(key=lambda x: x[0], reverse=True)
         chosen = lst[:top_k_per_group]
-
         for s, row, reasons in chosen:
             conf = s + boosts.get(mg, 0.0)
-            # Build minimal task object
             proposals.append({
-                "id": int(row.get("id", 0)) if row.get("id","").isdigit() else row.get("id"),
+                "id": int(row.get("id", 0)) if str(row.get("id","")).isdigit() else row.get("id"),
                 "stage": row.get("stage"),
                 "parent_category": row.get("parent_category"),
                 "task_name": row.get("task_name"),
@@ -164,7 +146,6 @@ def propose_tasks(intake: Dict[str, Any], catalog: List[Dict[str, Any]], top_k_p
                 "merge_compatible": str(row.get("merge_compatible","")).lower() in ("true","1","yes"),
                 "confidence": round(conf, 3),
                 "reasons": reasons,
-                # A handful of model hints we’ll pass downstream
                 "model_profile": {
                     "key": row.get("model_profile.key"),
                     "tier": row.get("model_profile.tier"),
@@ -172,10 +153,8 @@ def propose_tasks(intake: Dict[str, Any], catalog: List[Dict[str, Any]], top_k_p
                 }
             })
 
-    # Filter proposals: keep only groups that have either intake signals or nonzero scores
     proposals = [p for p in proposals if p["confidence"] > 0]
 
-    # Light dedupe by (merge_group, task_name)
     seen = set()
     unique: List[Dict[str, Any]] = []
     for p in sorted(proposals, key=lambda z: (-z["confidence"], z["stage"], z["task_name"] or "")):
@@ -190,8 +169,6 @@ def missing_fields_for_task(intake: Dict[str, Any], row: Dict[str, Any]) -> List
     mg = row.get("merge_group")
     needed = GROUP_REQUIRED_FIELDS.get(mg, [])
     missing = []
-    # map of where some fields might already be satisfied by intake
-    # users, qpm handled globally
     intake_map = {
         "users": get_field(intake, "traffic.users"),
         "qpm": get_field(intake, "traffic.qpm"),
@@ -204,49 +181,60 @@ def missing_fields_for_task(intake: Dict[str, Any], row: Dict[str, Any]) -> List
         "chain_depth": get_field(intake, "agentic.chain_depth"),
         "avg_steps": get_field(intake, "agentic.avg_steps"),
     }
-
     for f in needed:
         if f in GLOBAL_FIELDS:
             continue
-        # if intake already has it, skip
         if intake_map.get(f) not in (None, "", []):
             continue
-        # else check if catalog row already has a default (non-empty)
         val = row.get(f)
         if val is None or str(val).strip() == "" or str(val).lower() == "nan":
             missing.append(f)
     return missing
 
 def attach_missing_fields(intake: Dict[str, Any], catalog: List[Dict[str, Any]], proposals: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    # Build quick index row by id
     by_id = {str(r.get("id")): r for r in catalog}
     enriched = []
     for p in proposals:
         rid = str(p.get("id"))
         row = by_id.get(rid, {})
-        p = dict(p)  # copy
+        p = dict(p)
         p["ask_for"] = missing_fields_for_task(intake, row)
         enriched.append(p)
     return enriched
 
-def save_detected(intake_path: str, intake: Dict[str, Any], proposals: List[Dict[str, Any]]) -> str:
-    out = dict(intake)  # shallow copy
-    out["detected_tasks"] = proposals
-    out_path = os.path.join(RAW_DIR, f"detected_{now_ts()}.json")
-    with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(out, f, indent=2, ensure_ascii=False)
-    return out_path
+# ---------------- main ----------------
 
-def main():
-    # Optional: allow specifying an intake json path
-    intake_path = sys.argv[1] if len(sys.argv) > 1 else None
+def main(argv: Optional[list[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Detect tasks from an intake JSON (per-run)")
+    parser.add_argument("--run-dir", help="Run directory (e.g., data/out/acme-20251018_123456)")
+    parser.add_argument("-i", "--input", help="Explicit path to intake_*.json")
+    parser.add_argument("--topk", type=int, default=2, help="Top-k rows per group")
+    args = parser.parse_args(argv)
+
+    # pick a run dir (explicit or latest)
+    run_dir: Path = resolve_run_dir(args.run_dir)
+
+    # pick intake file: explicit path, else latest intake_* in run_dir
+    if args.input:
+        intake_path = Path(args.input)
+        if not intake_path.exists():
+            raise SystemExit(f"Intake file not found: {intake_path}")
+    else:
+        intake_path = require_latest_in(run_dir, "intake_", ".json",
+                                        f"No intake_*.json in {run_dir}. Run cli_intake first.")
+
     intake = load_intake(intake_path)
     catalog = load_catalog()
 
-    proposals = propose_tasks(intake, catalog, top_k_per_group=2)
+    proposals = propose_tasks(intake, catalog, top_k_per_group=args.topk)
     proposals = attach_missing_fields(intake, catalog, proposals)
 
-    out_path = save_detected(intake_path or "(latest)", intake, proposals)
+    # write detected into the SAME run folder, reusing intake timestamp for easy grouping
+    out_path = next_out_path(run_dir, "detected", "json", reuse_ts_from=intake_path)
+    merged = dict(intake)
+    merged["detected_tasks"] = proposals
+    with out_path.open("w", encoding="utf-8") as f:
+        json.dump(merged, f, indent=2, ensure_ascii=False)
 
     # Console summary
     print("\n=== Proposed Tasks (grouped) ===")
@@ -261,8 +249,9 @@ def main():
 
     print(f"\n✅ Saved merged intake + proposals → {out_path}\n")
     print("Next:")
-    print("  • Review/confirm tasks, or prune/add tasks manually.")
-    print("  • Then run planning & costing (MIN merge vs MAX separate).")
+    print(f"  • Review/confirm tasks, or prune/add tasks manually in: {out_path}")
+    print(f"  • Then run planning & costing on this run dir.")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 """
-cli_intake.py — Step 1: Collect global inputs for AI Cost Estimator (CLI)
-Writes: <PROJECT_ROOT>/data/raw/intake_YYYYMMDD_HHMMSS.json
+cli_intake.py — Step 1 (interactive)
+- Prompts the user for: NAME FIRST, then other intake fields.
+- Creates a per-run folder under data/out:  data/out/<slug>-YYYYMMDD_HHMMSS/
+- Writes:  intake_<timestamp>.json  inside that run folder.
+- Stays standalone; chaining/pipeline will be added later via a separate module.
 """
 
+from __future__ import annotations
 import json
-import os
 import sys
-from datetime import datetime
+from typing import Optional
 
-# ---------- path constants (root-anchored) ----------
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
-RAW_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
+# I/O helpers (UI-agnostic)
+from ..utils.io_paths import make_run_dir, write_run_meta, next_out_path, timestamp
 
-# ---------- helpers ----------
-def ensure_dir(path: str) -> None:
-    os.makedirs(path, exist_ok=True)
-
-def ts() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-def prompt_str(label: str, default: str | None = None, required: bool = False) -> str:
+# ---------- tiny prompt helpers ----------
+def prompt_str(label: str, default: Optional[str] = None, required: bool = False) -> str:
     while True:
         suffix = f" [{default}]" if default is not None else ""
         val = input(f"{label}{suffix}: ").strip()
@@ -32,7 +27,7 @@ def prompt_str(label: str, default: str | None = None, required: bool = False) -
             continue
         return val
 
-def prompt_float(label: str, default: float | None = None, min_val: float | None = None) -> float | None:
+def prompt_float(label: str, default: Optional[float] = None, min_val: Optional[float] = None) -> Optional[float]:
     while True:
         suffix = f" [{default}]" if default is not None else ""
         raw = input(f"{label}{suffix}: ").strip()
@@ -47,7 +42,7 @@ def prompt_float(label: str, default: float | None = None, min_val: float | None
         except ValueError:
             print("  • Please enter a number.")
 
-def prompt_int(label: str, default: int | None = None, min_val: int | None = None) -> int | None:
+def prompt_int(label: str, default: Optional[int] = None, min_val: Optional[int] = None) -> Optional[int]:
     while True:
         suffix = f" [{default}]" if default is not None else ""
         raw = input(f"{label}{suffix}: ").strip()
@@ -62,7 +57,7 @@ def prompt_int(label: str, default: int | None = None, min_val: int | None = Non
         except ValueError:
             print("  • Please enter an integer.")
 
-def prompt_choice(label: str, choices: list[str], default: str | None = None) -> str:
+def prompt_choice(label: str, choices: list[str], default: Optional[str] = None) -> str:
     ch_str = "/".join(choices)
     while True:
         suffix = f" [{default}]" if default is not None else ""
@@ -73,7 +68,7 @@ def prompt_choice(label: str, choices: list[str], default: str | None = None) ->
             return val
         print(f"  • Choose one of: {', '.join(choices)}")
 
-def prompt_yes_no(label: str, default: bool | None = None) -> bool:
+def prompt_yes_no(label: str, default: Optional[bool] = None) -> bool:
     def show_default(d):
         if d is True: return "y"
         if d is False: return "n"
@@ -83,14 +78,17 @@ def prompt_yes_no(label: str, default: bool | None = None) -> bool:
         suffix = f" [{d}]" if d is not None else ""
         val = input(f"{label} (y/n){suffix}: ").strip().lower()
         if not val and d is not None:
-            return default
+            return default  # type: ignore[return-value]
         if val in ("y","yes"): return True
         if val in ("n","no"): return False
         print("  • Please enter y or n.")
 
 # ---------- intake flow ----------
-def collect_intake() -> dict:
+def collect_intake_interactive() -> dict:
     print("\n=== Better App Cost Estimator — Intake (Step 1) ===\n")
+
+    # IMPORTANT: ask NAME FIRST (used to create the run folder)
+    name = prompt_str("Company/User name", required=True)
 
     app_brief = prompt_str("Describe the app you want to build", required=True)
 
@@ -108,7 +106,7 @@ def collect_intake() -> dict:
     corpus_gb = embed_model = refresh_rate = avg_chunk_tokens = None
     if rag_needed:
         corpus_gb = prompt_float("Corpus size (GB)", default=5.0, min_val=0.0)
-        embed_model = prompt_str("Embedding model (for defaults type Enter)", default="text-embedding-3-large")
+        embed_model = prompt_str("Embedding model (Enter for default)", default="text-embedding-3-large")
         refresh_rate = prompt_choice("Corpus refresh cadence", choices=["one_time","monthly","weekly","daily"], default="monthly")
         avg_chunk_tokens = prompt_int("Average chunk size (tokens)", default=350, min_val=1)
 
@@ -126,6 +124,7 @@ def collect_intake() -> dict:
         avg_steps = prompt_int("Average steps per request", default=6, min_val=1)
 
     payload = {
+        "meta": {"name": name},
         "app_brief": app_brief,
         "traffic": {"users": users, "qpm": qpm},
         "ops": {
@@ -148,19 +147,27 @@ def collect_intake() -> dict:
     return payload
 
 def main() -> int:
-    ensure_dir(RAW_DIR)
-    payload = collect_intake()
+    # 1) Interactive intake (NAME FIRST, then fields)
+    intake = collect_intake_interactive()
+    name = intake["meta"]["name"]
 
-    out_path = os.path.join(RAW_DIR, f"intake_{ts()}.json")
+    # 2) Create run directory under data/out using the provided name
+    run_dir = make_run_dir(name)  # e.g., data/out/acme-ltd-20251018_143012
+
+    # Optional: write run metadata (handy for a future UI)
+    write_run_meta(run_dir, name, extra={"phase": "intake"})
+
+    # 3) Write intake_<ts>.json into that run dir
+    out_path = next_out_path(run_dir, "intake", "json")  # uses a fresh timestamp
     with open(out_path, "w", encoding="utf-8") as f:
-        json.dump(payload, f, indent=2, ensure_ascii=False)
+        json.dump(intake, f, indent=2, ensure_ascii=False)
 
     print("\n✅ Intake saved:")
-    print(f"   {out_path}\n")
-    print("Next steps:")
-    print("  1) Run task detection on this intake JSON (src/task_detect.py).")
-    print("  2) Auto-generate follow-up questions per task using the catalog (200-row table).")
-    print("  3) Build MIN/MAX plans and compute cost.\n")
+    print(f"   {out_path}")
+    print(f"   Run directory: {run_dir}\n")
+    print("Next (manual for now):")
+    print(f"  python -m src.app.core.task_detect --run-dir \"{run_dir}\"")
+    print(f"  python -m src.app.core.plan_and_cost --run-dir \"{run_dir}\"")
     return 0
 
 if __name__ == "__main__":
