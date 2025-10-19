@@ -6,5 +6,7 @@ services:
     command: ["python", "-m", "src.app.cli.pipeline"]
     volumes:
       - ./data:/app/data       # Mount local data/ to container /app/data
+    env_file:
+      - .env
     stdin_open: true           # Enable interactive input (for intake prompts)
     tty: true                  # Keep terminal session open

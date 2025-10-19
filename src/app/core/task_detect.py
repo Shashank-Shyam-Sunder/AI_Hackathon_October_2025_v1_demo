@@ -235,18 +235,25 @@ def _deterministic_select_ids(intake: dict, df: pd.DataFrame) -> list[str]:
 # ---------------- simple provider prompt ----------------
 def _prompt_provider_simple() -> tuple[Optional[str], Optional[str]]:
     """
-    Single-line prompt with explanatory note for 'none'.
-    Valid: perplexity, openai, grok, google, none
+    Simple interactive provider chooser with a clear explanation
+    about deterministic vs probabilistic behavior.
     """
     print(
-        "\nAvailable LLM providers:\n"
+        "\n=== Model Selection ===\n"
+        "You can run task detection using either our internal deterministic rule-based system\n"
+        "or one of the available LLM providers.\n\n"
+        "Available providers:\n"
         "  • perplexity\n"
         "  • openai\n"
         "  • grok\n"
         "  • google\n"
-        "  • none  — performs deterministic, rule-based task identification (no LLM used).\n"
-        "without using any LLM.\n"
+        "  • none  — uses our deterministic, rule-based task identification "
+        "(recommended for reproducible results).\n\n"
+        "💡 Note: You’re welcome to experiment with LLMs, but their outputs may vary slightly between runs —\n"
+        "   even with deterministic settings (temperature=0, top_p=1, seed=42) — because large generative APIs\n"
+        "   still introduce probabilistic variation internally.\n"
     )
+
     valid = {"perplexity", "openai", "grok", "google", "none"}
     raw = input("Choose LLM provider (perplexity/openai/grok/google/none) [none]: ").strip().lower()
     if raw == "" or raw == "none":
@@ -257,6 +264,7 @@ def _prompt_provider_simple() -> tuple[Optional[str], Optional[str]]:
         return None, None
     model = default_model_for(provider)
     return provider, model
+
 
 
 # ---------------- core detection ----------------

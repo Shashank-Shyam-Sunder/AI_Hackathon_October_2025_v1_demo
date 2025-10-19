@@ -1,0 +1,6 @@
+.venv
+.git
+__pycache__/
+data/out/
+.env
+utils/clean_folder_structure.txt

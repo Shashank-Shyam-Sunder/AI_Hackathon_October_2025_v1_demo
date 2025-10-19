@@ -1,141 +1,147 @@
-The detailed architecture explanation and related artifacts (for example, diagrams) should be here.
+# 🧩 AI Cost Estimator — System Architecture
 
-# 🗂️ Project Folder Structure
+## 🏗️ Overview
 
-This document provides an overview of the repository structure and describes the purpose of each major folder and file.
+The **AI Cost Estimator** is a modular, Dockerized CLI application that collects user inputs, detects tasks using LLMs, and computes cost estimates for GenAI application development.
+
+---
+
+## 🗂️ Project Folder Structure
 
 ```
 .
-├── .env.example
-├── .gitignore
-├── Dockerfile
-├── clean_folder_structure.txt
-├── config.toml
 ├── data
-│   ├── out
-│   └── raw
-│       ├── AI_Cost_Estimator_Task_Catalog_200rows_v2.csv
-│       └── AI_Cost_Estimator_Task_Catalog_200rows_v2.xlsx
-├── docker-compose.yml
+│   ├── raw
+│   │   └── AI_Cost_Estimator_Catalog_UPDATED.xlsx
+│   └── out                     # Generated outputs (auto-created after runs)
 ├── docs
 │   └── ARCHITECTURE.md
-├── generate_root_folder_tree.py
-├── requirements
 ├── src
 │   └── app
-│       ├── __init__.py
 │       ├── cli
 │       │   ├── __init__.py
 │       │   ├── commands.py
 │       │   └── pipeline.py
-│       ├── config.py
 │       ├── core
 │       │   ├── __init__.py
 │       │   ├── cli_intake.py
+│       │   ├── formulas.py
 │       │   ├── plan_and_cost.py
+│       │   ├── pricing_dict.py
 │       │   └── task_detect.py
-│       └── utils
-│           ├── __init__.py
-│           └── io_paths.py
-└── tools
+│       ├── llm
+│       │   ├── providers
+│       │   │   ├── google.py
+│       │   │   ├── grok.py
+│       │   │   ├── openai.py
+│       │   │   └── perplexity.py
+│       │   ├── __init__.py
+│       │   ├── config.py
+│       │   └── selector.py
+│       ├── utils
+│       │   ├── __init__.py
+│       │   └── io_paths.py
+│       └── __init__.py
+├── utils
+│   ├── example_prompts.json
+│   ├── generate_root_folder_tree.py
+│   └── clean_folder_structure.txt
+├── docker-compose.yml
+├── Dockerfile
+├── requirements
+├── LICENSE
+├── .env.example
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-## 📁 Root Directory
+## ⚙️ Component Architecture
 
-| File / Folder | Description |
-|----------------|--------------|
-| `.env.example` | Template for environment variables. Copy this as `.env` and fill in your configuration. |
-| `.gitignore` | Specifies files and directories that should not be tracked by Git. |
-| `Dockerfile` | Defines the image configuration used to containerize the application. |
-| `docker-compose.yml` | Defines multi-container Docker setup (services, networks, volumes). |
-| `config.toml` | Central configuration file for app-wide parameters. |
-| `clean_folder_structure.txt` | Text export of the project’s cleaned directory structure. |
-| `generate_root_folder_tree.py` | Script used to generate folder tree documentation automatically. |
-| `requirements` | Directory or file listing Python dependencies (e.g., `requirements.txt` or submodules). |
-| `tools/` | Utility scripts or helper functions used for automation or maintenance. |
+### 1. CLI Layer (`src/app/cli/`)
+- **pipeline.py** — orchestrates the entire process (`intake → detect → plan_and_cost`).
+- **commands.py** — defines CLI behavior and command-line entrypoints.
 
----
+### 2. Core Logic (`src/app/core/`)
+- **cli_intake.py** — handles interactive intake of app details and requirements.
+- **task_detect.py** — uses LLMs to map user inputs to predefined catalog tasks.
+- **plan_and_cost.py** — performs plan generation, cost computation, and output formatting.
+- **formulas.py** — contains mathematical and cost-related formulas.
+- **pricing_dict.py** — stores pricing references for models and APIs.
 
-## 📊 Data Folder
+### 3. LLM Layer (`src/app/llm/`)
+- **providers/** — abstraction for each supported LLM (OpenAI, Perplexity, Google, Grok).
+- **selector.py** — picks the active provider dynamically at runtime.
+- **config.py** — manages LLM configuration defaults (e.g., temperature, max_tokens).
 
-| Path | Description |
-|------|--------------|
-| `data/raw/` | Contains raw input datasets for the project. |
-| `data/out/` | Contains generated or processed output files (predictions, results, reports). |
-| `AI_Cost_Estimator_Task_Catalog_200rows_v2.csv` | Raw dataset of task catalog used for cost estimation. |
-| `AI_Cost_Estimator_Task_Catalog_200rows_v2.xlsx` | Same dataset as Excel version for manual inspection. |
+### 4. Utilities
+- **src/app/utils/io_paths.py** — central reference for I/O directories.
+- **utils/example_prompts.json** — example prompts to test task detection.
+- **utils/generate_root_folder_tree.py** — script to regenerate project tree documentation.
 
 ---
 
-## 📘 Docs Folder
+## 🧾 Data Flow
 
-| File | Description |
-|-------|--------------|
-| `docs/ARCHITECTURE.md` | Detailed system architecture documentation including diagrams and component descriptions. |
+```mermaid
+flowchart TD
+    A[User Input via CLI] --> B[Intake Module]
+    B --> C[Task Detection (LLM)]
+    C --> D[Plan & Cost Computation]
+    D --> E[Report Generation]
+    E --> F[data/out/<timestamp>/]
+```
+
+**Explanation:**
+1. **CLI Intake** — collects project details interactively.  
+2. **Task Detection** — LLM identifies relevant tasks from catalog.  
+3. **Plan & Cost** — computes min–max cost estimates and generates reports.  
+4. **Outputs** — all results are saved to timestamped folders under `data/out/`.
 
 ---
 
-## 🧠 Source Code (`src/app/`)
-
-### 🔹 CLI Layer
-
-| File | Description |
-|------|--------------|
-| `src/app/cli/commands.py` | Defines available CLI commands and their arguments. |
-| `src/app/cli/pipeline.py` | Main entry point for running the cost estimation pipeline from CLI. |
-
-### 🔹 Core Logic
-
-| File | Description |
-|------|--------------|
-| `src/app/core/cli_intake.py` | Parses and validates CLI inputs before computation. |
-| `src/app/core/plan_and_cost.py` | Main cost computation logic combining plan generation and cost formulas. |
-| `src/app/core/task_detect.py` | Detects relevant tasks based on user input or data. |
-
-### 🔹 Utilities
+## 📊 Data Artifacts in `data/out/`
 
 | File | Description |
 |------|--------------|
-| `src/app/utils/io_paths.py` | Defines consistent input/output path references across the codebase. |
-| `src/app/config.py` | Loads and manages application-level configuration (environment, paths, etc.). |
+| `intake_*.json` | User input metadata |
+| `selected_tasks_*.json` | Tasks detected by the LLM |
+| `explain_*.md` | Explanation for detected tasks |
+| `cost_breakdown_*.json` | Per-task cost structure |
+| `cost_summary_*.md` | Human-readable report |
+| `run_meta.json` | Run metadata (timestamp, provider, etc.) |
 
 ---
 
-## 🧩 Other Folders
+## 🧱 Containerization
 
-| Folder | Description |
-|---------|--------------|
-| `tools/` | Reserved for future utility or deployment-related scripts (e.g., CI/CD helpers, test scripts). |
+| File | Description |
+|------|--------------|
+| **Dockerfile** | Defines Python 3.12-slim image and installs dependencies. |
+| **docker-compose.yml** | Mounts `data/` to persist outputs and loads `.env` API keys. |
 
----
-
-## 🏗️ Developer Notes
-
-- Run the project locally with:
-  ```bash
-  docker-compose up
-  ```
-- To rebuild after code changes:
-  ```bash
-  docker-compose up --build
-  ```
-- For CLI usage:
-  ```bash
-  python -m src.app.cli.pipeline
-  ```
+Command to run:
+```bash
+docker compose run --rm app
+```
 
 ---
 
-## 📄 Version Control & Config
-
-- **Environment variables** → managed via `.env`  
-- **Dependencies** → managed via `requirements/`  
-- **Containerization** → via `Dockerfile` and `docker-compose.yml`  
+## 🧩 Future Extensions
+- Integration of automatic LLM-based report generation.
+- Support for more pricing APIs.
+- Web UI using FastAPI + Streamlit or React frontend.
 
 ---
 
-### ✅ Recommendation
-Keep this document updated whenever new folders or modules are added — ideally regenerate it automatically using `generate_root_folder_tree.py`.
+## 🧠 Developer Note
+The entire pipeline is CLI-first by design — all output paths, logs, and configurations are relative to the `data/` folder.  
+To regenerate this document, run:
+```bash
+python utils/generate_root_folder_tree.py
+```
+---
 
+# 🪪 License
+See [LICENSE](../LICENSE) for license details.

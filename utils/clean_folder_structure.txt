@@ -1,0 +1,46 @@
+.
+├── data
+│   ├── out
+│   └── raw
+│       └── AI_Cost_Estimator_Catalog_UPDATED.xlsx
+├── docs
+│   └── ARCHITECTURE.md
+├── src
+│   └── app
+│       ├── cli
+│       │   ├── __init__.py
+│       │   ├── commands.py
+│       │   └── pipeline.py
+│       ├── core
+│       │   ├── __init__.py
+│       │   ├── cli_intake.py
+│       │   ├── formulas.py
+│       │   ├── plan_and_cost.py
+│       │   ├── pricing_dict.py
+│       │   └── task_detect.py
+│       ├── llm
+│       │   ├── providers
+│       │   │   ├── google.py
+│       │   │   ├── grok.py
+│       │   │   ├── openai.py
+│       │   │   └── perplexity.py
+│       │   ├── __init__.py
+│       │   ├── config.py
+│       │   └── selector.py
+│       ├── utils
+│       │   ├── __init__.py
+│       │   └── io_paths.py
+│       └── __init__.py
+├── utils
+│   ├── clean_folder_structure.txt
+│   ├── example_prompts.json
+│   └── generate_root_folder_tree.py
+├── .dockerignore
+├── .env
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile
+├── LICENSE
+├── README.md
+└── requirements

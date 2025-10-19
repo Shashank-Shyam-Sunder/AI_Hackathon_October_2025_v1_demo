@@ -1,8 +1,5 @@
 # ============================================================
-# 🧠 AI Cost Estimator Project — .gitignore
-# ============================================================
-# This file is customized for the current repository structure.
-# It includes standard Python ignores + project-specific rules.
+# 🧠 AI Cost Estimator Project — .gitignore (keep data & utils)
 # ============================================================
 
 # -------------------------------
@@ -11,11 +8,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -57,7 +50,7 @@ coverage.xml
 cover/
 
 # -------------------------------
-# 🧩 Environment / Config Files
+# 🧩 Environment / Config
 # -------------------------------
 .env
 .venv/
@@ -66,13 +59,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.pdm.toml
-.pdm-python
-.pdm-build/
 __pypackages__/
 
 # -------------------------------
-# ⚙️ IDE / Editor Directories
+# ⚙️ IDE / Editor
 # -------------------------------
 .idea/
 .vscode/
@@ -81,7 +71,7 @@ __pypackages__/
 .ropeproject
 
 # -------------------------------
-# 🪶 Temporary & Cache
+# 🪶 Temp & OS files
 # -------------------------------
 *.log
 *.tmp
@@ -91,7 +81,7 @@ __pypackages__/
 Thumbs.db
 
 # -------------------------------
-# 📗 Documentation
+# 📗 Documentation builds
 # -------------------------------
 docs/_build/
 site/
@@ -105,29 +95,18 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
+.ruff_cache/
 
 # -------------------------------
-# 🧰 Project-specific ignores
+# 🧰 Project-specific (KEEP data & utils)
 # -------------------------------
-# Ignore generated utility files
-#generate_root_folder_tree.py
-#clean_folder_structure.txt
+# Keep all files in data/raw, data/out, and utils.
+# Only ignore known temporary artifacts inside them.
 
-# Ignore Git metadata (only local)
-.git/
+# Office/temporary files in data
+data/raw/~$*
+data/raw/*.tmp
+data/out/~$*
+data/out/*.tmp
 
-# Ignore local requirements caches if any
-requirements/*.txt~
-
-# Ignore Docker build cache (if any)
-**/__pycache__/
-**/.pytest_cache/
-**/.mypy_cache/
-**/.ruff_cache/
-
-# ============================================================
-# ✅ Notes:
-# - The `.env.example` IS tracked (template for configuration).
-# - `Dockerfile` and `docker-compose.yml` ARE tracked.
-# - `config.toml` is tracked (core config).
-# ============================================================
+# (no ignores for utils/ — keep everything)

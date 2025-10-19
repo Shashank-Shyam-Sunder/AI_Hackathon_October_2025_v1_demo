@@ -10,10 +10,43 @@ from __future__ import annotations
 import json
 import sys
 import re
+import time
+import unicodedata
+from pathlib import Path
 from typing import Optional, List, Tuple, Dict, Any
 
-# I/O helpers (UI-agnostic)
-from ..utils.io_paths import make_run_dir, write_run_meta, next_out_path, timestamp
+# Use only what exists in io_paths
+from ..utils.io_paths import OUT_DIR, next_out_path, write_json
+
+# ---------- tiny local run-dir helpers (do NOT modify io_paths) ----------
+def _timestamp() -> str:
+    return time.strftime("%Y%m%d_%H%M%S")
+
+def _slugify(value: str) -> str:
+    """
+    Simplified slugify: ascii, lower, keep alnum and dashes.
+    """
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+    value = re.sub(r"[^\w\-]+", "-", value.lower()).strip("-")
+    value = re.sub(r"-{2,}", "-", value)
+    return value or "run"
+
+def make_run_dir(owner_name: str) -> Path:
+    """
+    Create a fresh run directory under data/out:
+      data/out/<slug>-YYYYMMDD_HHMMSS
+    Also writes a small run_meta.json for convenience.
+    """
+    slug = _slugify(owner_name)
+    rd = OUT_DIR / f"{slug}-{_timestamp()}"
+    rd.mkdir(parents=True, exist_ok=True)
+    # minimal run meta
+    write_json(
+        {"owner": owner_name, "slug": slug, "created_at": _timestamp(), "phase": "intake"},
+        rd / "run_meta.json",
+        indent=2,
+    )
+    return rd
 
 # ---------- tiny prompt helpers ----------
 def prompt_str(label: str, default: Optional[str] = None, required: bool = False) -> str:
@@ -162,7 +195,7 @@ def collect_intake_interactive() -> dict:
         "Hosting preference",
         choices=["api","self_host"],
         default="api",
-        help_text="    api      → use model provider APIs (priced in MVP)\n"
+        help_text="    api       → use model provider APIs (priced in MVP)\n"
                   "    self_host → run your own model servers (priced later if GPU rates available)\n"
     )
 
@@ -255,7 +288,6 @@ def main() -> int:
     name = intake["meta"]["name"]
 
     run_dir = make_run_dir(name)  # e.g., data/out/acme-ltd-20251018_143012
-    write_run_meta(run_dir, name, extra={"phase": "intake"})
 
     out_path = next_out_path(run_dir, "intake", "json")
     with open(out_path, "w", encoding="utf-8") as f:
@@ -264,7 +296,7 @@ def main() -> int:
     print("\n✅ Intake saved:")
     print(f"   {out_path}")
     print(f"   Run directory: {run_dir}\n")
-    print("Next (manual for now):")
+    print("Next:")
     print(f"  python -m src.app.core.task_detect --run-dir \"{run_dir}\"")
     print(f"  python -m src.app.core.plan_and_cost --run-dir \"{run_dir}\"")
     return 0

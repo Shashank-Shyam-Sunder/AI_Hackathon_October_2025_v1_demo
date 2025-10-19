@@ -1,0 +1,51 @@
+{
+  "chatbot_assistants": [
+    "A customer support chatbot for an e-commerce site that answers product and order questions in English and German.",
+    "An internal company assistant that summarizes meeting notes, generates reports, and integrates with Google Drive.",
+    "A healthcare virtual assistant that gives general wellness advice and triages user symptoms — GDPR and HIPAA compliant.",
+    "An AI tutor that helps students learn Python and explains code step-by-step with examples.",
+    "A smart home voice assistant that understands Bulgarian and English, controlling lights and devices."
+  ],
+  "knowledge_base_rag": [
+    "A knowledge retrieval system for company policies and HR FAQs using RAG with PDF uploads.",
+    "An AI search engine for medical research papers that finds and summarizes relevant studies.",
+    "A documentation assistant for developers that answers technical questions based on API docs.",
+    "A chatbot for a supplement company that answers customer questions based on EFSA and clinical data.",
+    "A multilingual legal document Q&A app using PGVector and Cohere reranker."
+  ],
+  "creative_generation": [
+    "An AI writing tool that generates SEO-optimized product descriptions and blog posts.",
+    "A marketing copy generator that adapts tone and length for different platforms (email, Twitter, LinkedIn).",
+    "A video script generator for YouTube creators with auto-summarization of trending topics.",
+    "A children’s story generator that personalizes stories by name, theme, and moral.",
+    "A meme generator that creates text-image combinations from trending topics."
+  ],
+  "data_automation": [
+    "An app that reads invoices, extracts key data, and exports to Excel.",
+    "A meeting transcription and summary tool using speech-to-text and GPT summarization.",
+    "A contract analyzer that highlights key clauses and suggests risk levels.",
+    "An email summarizer and categorizer for busy professionals.",
+    "An AI system that converts PDF scientific papers into structured datasets."
+  ],
+  "regulated_domain_apps": [
+    "A patient-facing AI that helps explain lab results in plain language — HIPAA required.",
+    "A financial compliance bot that summarizes regulations and answers internal questions.",
+    "A pharma R&D assistant that summarizes experimental protocols and research papers.",
+    "A legal brief summarization tool for EU case law — GDPR compliance mandatory.",
+    "A veterinary diagnostic helper that interprets lab test results and provides reference ranges."
+  ],
+  "analytics_recommendation": [
+    "A personalized product recommendation engine for a fitness supplement store.",
+    "An AI that predicts churn risk based on customer chat transcripts.",
+    "A resume-to-job matching tool that uses embeddings for semantic similarity.",
+    "A social-media post recommender that adapts to user engagement patterns.",
+    "A dashboard that auto-summarizes KPIs and explains trends in natural language."
+  ],
+  "multilingual_translation": [
+    "A multilingual translation bot that adapts product listings for Amazon EU marketplaces.",
+    "A system that translates and culturally adapts marketing content into six European languages.",
+    "A cross-language FAQ bot that translates user input and retrieves relevant answers.",
+    "A content localization app that merges machine translation and tone correction.",
+    "An AI subtitle generator for multilingual video content."
+  ]
+}
