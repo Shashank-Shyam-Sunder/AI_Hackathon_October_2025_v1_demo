@@ -1,5 +1,22 @@
-pandas
-numpy
-pydantic
-click
-tabulate
+# Core data
+pandas>=2.2.0
+numpy>=1.26.0
+openpyxl>=3.1.2   # Excel reader for .xlsx/.xlsm; works for your catalog
+
+# CLI / formatting
+click>=8.1.7
+tabulate>=0.9.0
+
+# Config / validation
+pydantic>=2.7.0
+python-dotenv>=1.0.1
+
+# LangChain core + providers you use
+langchain>=0.2.14
+langchain-community>=0.2.0      # ChatPerplexity lives here
+langchain-openai>=0.1.7         # OpenAI + OpenAI-compatible (Grok/xAI)
+langchain-google-genai>=0.1.3   # Google Gemini
+langchain-perplexity>=0.1.0
+
+# (optional but handy) retries for network hiccups
+tenacity>=8.3.0

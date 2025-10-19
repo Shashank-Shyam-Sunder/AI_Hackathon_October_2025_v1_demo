@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
 cli_intake.py — Step 1 (interactive)
-- Prompts the user for: NAME FIRST, then other intake fields.
+- Prompts only the fields we can price in the MVP.
 - Creates a per-run folder under data/out:  data/out/<slug>-YYYYMMDD_HHMMSS/
-- Writes:  intake_<timestamp>.json  inside that run folder.
-- Stays standalone; chaining/pipeline will be added later via a separate module.
+- Writes: intake_<timestamp>.json inside that run folder.
 """
 
 from __future__ import annotations
 import json
 import sys
-from typing import Optional
+import re
+from typing import Optional, List, Tuple, Dict, Any
 
 # I/O helpers (UI-agnostic)
 from ..utils.io_paths import make_run_dir, write_run_meta, next_out_path, timestamp
@@ -57,8 +57,10 @@ def prompt_int(label: str, default: Optional[int] = None, min_val: Optional[int]
         except ValueError:
             print("  • Please enter an integer.")
 
-def prompt_choice(label: str, choices: list[str], default: Optional[str] = None) -> str:
+def prompt_choice(label: str, choices: List[str], default: Optional[str] = None, help_text: Optional[str] = None) -> str:
     ch_str = "/".join(choices)
+    if help_text:
+        print(help_text)
     while True:
         suffix = f" [{default}]" if default is not None else ""
         val = input(f"{label} ({ch_str}){suffix}: ").strip().lower()
@@ -83,82 +85,179 @@ def prompt_yes_no(label: str, default: Optional[bool] = None) -> bool:
         if val in ("n","no"): return False
         print("  • Please enter y or n.")
 
+# ---------- helpers: natural-language language-pair parsing ----------
+_SPLIT_ARROW = re.compile(r"\s*->\s*|\s*→\s*|\s+")  # '->' or unicode arrow or whitespace
+
+def _normalize_lang_token(tok: str) -> str:
+    return tok.strip().strip(",;")
+
+def parse_language_pairs(raw: str) -> Tuple[str, List[dict]]:
+    """
+    Accepts user-friendly inputs like:
+      "auto English, English French"
+    and stricter forms like:
+      "auto->en, en->fr"
+    Returns:
+      normalized_string  e.g. "auto->English, English->French"
+      parsed_list        e.g. [{"source":"auto","target":"English"}, ...]
+    """
+    if not raw:
+        return "", []
+    pairs = []
+    for chunk in raw.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        parts = [p for p in _SPLIT_ARROW.split(chunk) if p]
+        if len(parts) == 1:
+            src, tgt = "auto", _normalize_lang_token(parts[0])
+        elif len(parts) >= 2:
+            src, tgt = _normalize_lang_token(parts[0]), _normalize_lang_token(parts[1])
+        else:
+            continue
+        if src and tgt:
+            pairs.append({"source": src, "target": tgt})
+    normalized = ", ".join(f"{p['source']}->{p['target']}" for p in pairs)
+    return normalized, pairs
+
+# ---------- RAG chunk granularity mapping ----------
+CHUNK_GRANULARITY: Dict[str, int] = {
+    "small": 350,   # ~350 tokens per chunk (high granularity; more chunks)
+    "medium": 650,  # ~650 tokens (balanced)
+    "large": 900,   # ~900 tokens (fewer, larger chunks)
+}
+
+def describe_granularity() -> str:
+    return (
+        "    small  → ~350 tokens per chunk (more precise search, more chunks)\n"
+        "    medium → ~650 tokens (balanced)\n"
+        "    large  → ~900 tokens (fewer chunks, cheaper indexing)\n"
+    )
+
 # ---------- intake flow ----------
 def collect_intake_interactive() -> dict:
     print("\n=== Better App Cost Estimator — Intake (Step 1) ===\n")
+    print("Required:")
+    print("  • Enter your Company/User name.")
+    print("  • Describe the app you want to build.")
+    print("\nTips:")
+    print("  • For fields showing a value in [square brackets], you can press Enter to accept the default.")
+    print("  • Only fields we can price in the MVP are asked here.\n")
 
-    # IMPORTANT: ask NAME FIRST (used to create the run folder)
-    name = prompt_str("Company/User name", required=True)
+    # Required identity & brief (readable labels)
+    name = prompt_str("Company or user name", required=True)
+    app_brief = prompt_str("Briefly describe the app you want to build", required=True)
 
-    app_brief = prompt_str("Describe the app you want to build", required=True)
-
+    # Traffic & tokens (LLM token cost)
     users = prompt_int("Estimated monthly active users (MAU)", default=100, min_val=0)
-    qpm = prompt_int("Queries per user per month (QPM)", default=30, min_val=0)
+    rpm = prompt_int("Requests per user per month (RPM)", default=30, min_val=0)
+    tokens_in  = prompt_int("Average input tokens per request",  default=500, min_val=0)
+    tokens_out = prompt_int("Average output tokens per request", default=300, min_val=0)
 
-    availability = prompt_choice("Availability target", choices=["99.0","99.9"], default="99.0")
-    monitoring = prompt_choice("Monitoring tier", choices=["basic","standard","enhanced"], default="basic")
-    compliance = prompt_choice("Compliance", choices=["none","gdpr","hipaa"], default="none")
+    # Compliance (flag — may add surcharge or tasks later)
+    compliance = prompt_choice("Compliance requirement", choices=["none","gdpr","hipaa"], default="none")
 
-    hosting = prompt_choice("Hosting preference", choices=["api","cloud","self_host"], default="api")
-    fine_tune_pref = prompt_choice("Fine-tuning", choices=["none","maybe","required"], default="none")
+    # Hosting preference (API or self_host) — readable label
+    hosting = prompt_choice(
+        "Hosting preference",
+        choices=["api","self_host"],
+        default="api",
+        help_text="    api      → use model provider APIs (priced in MVP)\n"
+                  "    self_host → run your own model servers (priced later if GPU rates available)\n"
+    )
 
+    # RAG (embedding/indexing cost block)
     rag_needed = prompt_yes_no("Will you use your own knowledge base / RAG?", default=False)
-    corpus_gb = embed_model = refresh_rate = avg_chunk_tokens = None
+    corpus_gb = refresh_rate = chunk_granularity = None
     if rag_needed:
-        corpus_gb = prompt_float("Corpus size (GB)", default=5.0, min_val=0.0)
-        embed_model = prompt_str("Embedding model (Enter for default)", default="text-embedding-3-large")
-        refresh_rate = prompt_choice("Corpus refresh cadence", choices=["one_time","monthly","weekly","daily"], default="monthly")
-        avg_chunk_tokens = prompt_int("Average chunk size (tokens)", default=350, min_val=1)
+        corpus_gb = prompt_float("Knowledge base size (GB)", default=5.0, min_val=0.0)
+        refresh_rate = prompt_choice(
+            "How often will you refresh the knowledge base?",
+            choices=["one_time","monthly","weekly","daily"],
+            default="monthly"
+        )
+        print("Choose chunk granularity (used for splitting documents for search):")
+        print(describe_granularity())
+        chunk_granularity = prompt_choice("Granularity", choices=["small","medium","large"], default="medium")
 
-    need_translation = prompt_yes_no("Is multilingual translation required?", default=False)
-    language_pairs = None
+    # Translation (keep simple and friendly)
+    need_translation = prompt_yes_no("Do you need translation?", default=False)
+    language_pairs_raw = language_pairs_norm = None
+    language_pairs_list: List[dict] = []
     if need_translation:
-        language_pairs = prompt_str("Language pairs (e.g., auto→en, en→es)", default="auto→en")
-    domain = prompt_choice("Primary domain", choices=["general","legal","medical","financial","technical"], default="general")
+        language_pairs_raw = prompt_str(
+            "Enter language pairs (e.g., 'auto English, English French')",
+            default="auto English"
+        )
+        language_pairs_norm, language_pairs_list = parse_language_pairs(language_pairs_raw)
 
-    agentic = prompt_yes_no("Will the app orchestrate tools (agentic workflows)?", default=False)
-    num_tools = chain_depth = avg_steps = None
-    if agentic:
-        num_tools = prompt_int("Number of tools", default=2, min_val=1)
-        chain_depth = prompt_int("Max chain depth (steps in a path)", default=4, min_val=1)
-        avg_steps = prompt_int("Average steps per request", default=6, min_val=1)
+    # Build payload
+    avg_chunk_tokens = CHUNK_GRANULARITY.get(chunk_granularity, None) if rag_needed else None
 
-    payload = {
+    payload: Dict[str, Any] = {
         "meta": {"name": name},
         "app_brief": app_brief,
-        "traffic": {"users": users, "qpm": qpm},
+
+        # Core: LLM token pricing
+        "traffic": {
+            "users": users,
+            "rpm": rpm,
+            "qpm": rpm,  # back-compat alias
+            "tokens_in": tokens_in,
+            "tokens_out": tokens_out,
+        },
+
+        # Ops — monitoring/availability internal in MVP
         "ops": {
-            "availability_target": float(availability),
-            "monitoring_tier": monitoring.capitalize(),
+            "availability_target": 99.0,        # internal default (not asked)
+            "monitoring_tier": "Standard",      # internal label (no tiers in MVP)
             "compliance": compliance.upper() if compliance != "none" else "None",
         },
-        "preferences": {"hosting": hosting, "fine_tuning": fine_tune_pref, "domain": domain},
+
+        # Hosting: API (priced) vs self_host (priced only if GPU rates available)
+        "preferences": {"hosting": hosting},
+
+        # RAG cost inputs (embedding/indexing)
         "rag": {
             "enabled": rag_needed,
             "corpus_gb": corpus_gb,
-            "embed_model": embed_model,
+            "embed_model": None,            # internal default used in planner
             "refresh_rate": refresh_rate,
-            "avg_chunk_tokens": avg_chunk_tokens,
+            "avg_chunk_tokens": avg_chunk_tokens,      # derived from granularity choice
+            "chunk_granularity": chunk_granularity,    # keep the human-readable label too
         },
-        "i18n": {"translation_required": need_translation, "language_pairs": language_pairs},
-        "agentic": {"enabled": agentic, "num_tools": num_tools, "chain_depth": chain_depth, "avg_steps": avg_steps},
+
+        # Translation
+        "i18n": {
+            "translation_required": need_translation,
+            "language_pairs_raw": language_pairs_raw,      # free-form user text (for audit)
+            "language_pairs": language_pairs_norm,         # normalized "a->b, c->d"
+            "language_pairs_parsed": language_pairs_list,  # structured list for downstream scaling
+        },
+
+        # Internals we compute later (no prompts)
+        "internals": {
+            "monitoring": {
+                "provider": "langsmith",
+                "use_tiers": False
+            },
+            "guardrails_enabled": True,
+            "embedding_model_default": "text-embedding-3-large"
+        },
+
+        # Placeholder to be filled by task_detect
         "detected_tasks": [],
     }
     return payload
 
 def main() -> int:
-    # 1) Interactive intake (NAME FIRST, then fields)
     intake = collect_intake_interactive()
     name = intake["meta"]["name"]
 
-    # 2) Create run directory under data/out using the provided name
     run_dir = make_run_dir(name)  # e.g., data/out/acme-ltd-20251018_143012
-
-    # Optional: write run metadata (handy for a future UI)
     write_run_meta(run_dir, name, extra={"phase": "intake"})
 
-    # 3) Write intake_<ts>.json into that run dir
-    out_path = next_out_path(run_dir, "intake", "json")  # uses a fresh timestamp
+    out_path = next_out_path(run_dir, "intake", "json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(intake, f, indent=2, ensure_ascii=False)
 

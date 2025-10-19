@@ -1,122 +1,124 @@
-# src/app/utils/io_paths.py
+"""
+io_paths.py — Common I/O utilities for run directory management and JSON files
+Used by:
+  • cli_intake.py
+  • task_detect.py
+  • plan_and_cost.py
+"""
+
 from __future__ import annotations
 from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any
-import json
-import re
+import json, time
+from typing import Any, Dict, Optional
 
-from ..config import settings
+# ------------------------------------------------------------
+# Base paths
+# ------------------------------------------------------------
 
-# --- Root locations ---
-DATA_ROOT = Path("data")
-RAW_DIR   = DATA_ROOT / "raw"                                 # keep catalog/static inputs here
-OUT_ROOT  = Path(settings.app.output_dir or "data/out")       # all run outputs live under here
+DATA_DIR = Path("data")
+OUT_DIR = DATA_DIR / "out"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# --- Basics ---
-def ensure_dirs() -> None:
-    """Ensure OUT_ROOT exists."""
-    OUT_ROOT.mkdir(parents=True, exist_ok=True)
+# ------------------------------------------------------------
+# Run directory helpers
+# ------------------------------------------------------------
 
-def slugify(name: str) -> str:
-    """Filesystem-safe slug for folder names."""
-    s = name.strip().lower()
-    s = re.sub(r"[^a-z0-9]+", "-", s)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s or "run"
-
-def timestamp() -> str:
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
-
-# --- Run folder lifecycle ---
-def run_dir_name(name: str, when: Optional[str] = None) -> str:
-    """Return folder name '<slug>-YYYYMMDD_HHMMSS' (does not create it)."""
-    ts = when or timestamp()
-    return f"{slugify(name)}-{ts}"
-
-def make_run_dir(name: str, when: Optional[str] = None) -> Path:
+def resolve_run_dir(run_dir_arg: Optional[str] = None) -> Path:
     """
-    Create and return a new run directory under OUT_ROOT.
-    Call this immediately after you collect the user's name (via input()).
+    Resolve the target run directory.
+    - If run_dir_arg is provided, return that path (creating if necessary).
+    - Otherwise, pick the most recently modified directory under data/out.
     """
-    ensure_dirs()
-    rd = OUT_ROOT / run_dir_name(name, when)
-    rd.mkdir(parents=True, exist_ok=True)
-    return rd
+    if run_dir_arg:
+        run_dir = Path(run_dir_arg)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        return run_dir
 
-def write_run_meta(run_dir: Path, name: str, extra: Optional[Dict[str, Any]] = None) -> Path:
+    # No argument → auto-pick latest under data/out
+    subdirs = [p for p in OUT_DIR.iterdir() if p.is_dir()]
+    if not subdirs:
+        raise SystemExit("❌ No run directory found. Run the intake step first.")
+    subdirs.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    latest = subdirs[0]
+    print(f"📁 Auto-selected latest run directory: {latest}")
+    return latest
+
+def next_out_path(run_dir: Path, prefix: str, ext: str) -> Path:
     """
-    Persist minimal run metadata (useful for UI and later steps).
-    Writes 'run.json' inside the run directory.
+    Generate a new timestamped output path inside the run directory.
+    Example:
+      next_out_path(run_dir, 'selected_tasks', 'json')
+      -> data/out/<run>/selected_tasks_20251019_172015.json
     """
-    meta = {
-        "name": name,
-        "created_at": datetime.now().isoformat(timespec="seconds"),
-        "run_dir": str(run_dir),
-    }
-    if extra:
-        meta.update(extra)
-    path = run_dir / "run.json"
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    return run_dir / f"{prefix}_{ts}.{ext}"
+
+def require_latest_in(
+    run_dir: Path,
+    prefix: str,
+    suffix: str,
+    missing_msg: str = "Required file not found."
+) -> Path:
+    """
+    Find the most recent file matching prefix/suffix in a run dir.
+    Example:
+      require_latest_in(run_dir, 'intake_', '.json')
+    """
+    matches = sorted(
+        (p for p in run_dir.glob(f"{prefix}*{suffix}") if p.is_file()),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not matches:
+        raise SystemExit(f"❌ {missing_msg}")
+    return matches[0]
+
+# ------------------------------------------------------------
+# JSON helpers
+# ------------------------------------------------------------
+
+def load_json(path: Path) -> Dict[str, Any]:
+    """Load a JSON file with UTF-8 encoding."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def write_json(data: Dict[str, Any], path: Path, indent: int = 2) -> None:
+    """Write a dictionary to JSON file (UTF-8, indented)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(meta, f, indent=2, ensure_ascii=False)
-    return path
+        json.dump(data, f, indent=indent, ensure_ascii=False)
 
-def read_run_meta(run_dir: Path) -> Dict[str, Any]:
-    """Read 'run.json' if present; returns {} if missing."""
-    path = run_dir / "run.json"
-    if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+# ------------------------------------------------------------
+# Misc utilities
+# ------------------------------------------------------------
 
-def list_run_dirs() -> List[Path]:
-    """All existing run directories (sorted newest first)."""
-    ensure_dirs()
-    dirs = [p for p in OUT_ROOT.iterdir() if p.is_dir()]
-    return sorted(dirs, key=lambda p: p.stat().st_mtime, reverse=True)
+def list_runs(limit: int = 10) -> None:
+    """Print the most recent run directories for quick navigation."""
+    runs = sorted(
+        [p for p in OUT_DIR.iterdir() if p.is_dir()],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not runs:
+        print("No runs found under data/out.")
+        return
+    print("Recent runs:")
+    for p in runs[:limit]:
+        ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(p.stat().st_mtime))
+        print(f"  • {p.name} (modified {ts})")
 
-def latest_run_dir() -> Optional[Path]:
-    """Most recently modified run directory, or None."""
-    dirs = list_run_dirs()
-    return dirs[0] if dirs else None
+# ------------------------------------------------------------
+# Example usage (debug)
+# ------------------------------------------------------------
 
-def resolve_run_dir(run_dir: Optional[str]) -> Path:
-    """
-    If run_dir is given, return it (must exist). Otherwise return latest_run_dir().
-    Raise with a clear message if nothing is available.
-    """
-    if run_dir:
-        p = Path(run_dir)
-        if not p.exists():
-            raise SystemExit(f"Run directory not found: {p}")
-        return p
-    p = latest_run_dir()
-    if not p:
-        raise SystemExit("No run directory found. Create one first (e.g., via cli_intake).")
-    return p
-
-# --- File helpers (within a run dir) ---
-def latest_file_in(dirpath: Path, prefix: str, suffix: str) -> Optional[Path]:
-    """Latest file in dirpath matching prefix/suffix, or None."""
-    files = sorted(dirpath.glob(f"{prefix}*{suffix}"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return files[0] if files else None
-
-def require_latest_in(dirpath: Path, prefix: str, suffix: str, missing_msg: str) -> Path:
-    """Like latest_file_in but raises if not found (nice for pipeline steps)."""
-    p = latest_file_in(dirpath, prefix, suffix)
-    if not p:
-        raise SystemExit(missing_msg)
-    return p
-
-def next_out_path(run_dir: Path, stem_prefix: str, ext: str, reuse_ts_from: Optional[Path] = None) -> Path:
-    """
-    Build an output path like '<run_dir>/<stem_prefix>_<ts>.<ext>'.
-    If reuse_ts_from is provided, reuse that file's timestamp stem part.
-    """
-    if reuse_ts_from is not None:
-        # expects filenames like 'intake_YYYYMMDD_HHMMSS.json' => take part after first underscore
-        base = reuse_ts_from.stem
-        ts_part = base.split("_", 1)[-1] if "_" in base else timestamp()
-    else:
-        ts_part = timestamp()
-    return run_dir / f"{stem_prefix}_{ts_part}.{ext.lstrip('.')}"
+if __name__ == "__main__":
+    # Try auto-resolving a run directory
+    rd = resolve_run_dir()
+    print(f"Resolved run dir: {rd}")
+    # Find latest intake file
+    try:
+        intake = require_latest_in(rd, "intake_", ".json")
+        print(f"Latest intake: {intake}")
+    except SystemExit as e:
+        print(e)

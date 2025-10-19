@@ -1,0 +1,190 @@
+{
+  "selected_tasks": [
+    {
+      "task_id": "35",
+      "task_name": "Machine Translation (xx→en)",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "cohere/command-r-plus-mini",
+      "parent_category": "Translation & Language Adaptation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "36",
+      "task_name": "Machine Translation (en→xx)",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-flash",
+      "parent_category": "Translation & Language Adaptation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "37",
+      "task_name": "Tone Adaptation",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-pro",
+      "parent_category": "Translation & Language Adaptation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "58",
+      "task_name": "Aggregate Report Query",
+      "stage": "S1",
+      "pricing_basis": "api_call",
+      "pricing_model_key": "anthropic/claude-3.5-haiku",
+      "parent_category": "Database / Knowledge Access",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "59",
+      "task_name": "Anomaly Query Builder",
+      "stage": "S1",
+      "pricing_basis": "api_call",
+      "pricing_model_key": "mistral/mistral-medium",
+      "parent_category": "Database / Knowledge Access",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "69",
+      "task_name": "Corpus Embedding (one-time)",
+      "stage": "S1",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4o-mini",
+      "parent_category": "Retrieval & Vector Indexing",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "75",
+      "task_name": "Vector Store Compaction",
+      "stage": "S1",
+      "pricing_basis": "token",
+      "pricing_model_key": "cohere/command-r-plus-mini",
+      "parent_category": "Retrieval & Vector Indexing",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "90",
+      "task_name": "Vector Store Upsert",
+      "stage": "S1",
+      "pricing_basis": "token",
+      "pricing_model_key": "mistral/mistral-large-mini",
+      "parent_category": "Retrieval & Vector Indexing",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "103",
+      "task_name": "General Text Generation",
+      "stage": "S2",
+      "pricing_basis": "token",
+      "pricing_model_key": "mistral/mistral-medium",
+      "parent_category": "Text & Content Generation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "112",
+      "task_name": "Chatbot Response",
+      "stage": "S2",
+      "pricing_basis": "token",
+      "pricing_model_key": "mistral/mistral-large-mini",
+      "parent_category": "Text & Content Generation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "117",
+      "task_name": "Tweet/Short Post Generation",
+      "stage": "S2",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-pro",
+      "parent_category": "Text & Content Generation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "143",
+      "task_name": "Research Paper Summary",
+      "stage": "S3",
+      "pricing_basis": "token",
+      "pricing_model_key": "anthropic/claude-3.5-sonnet-mini",
+      "parent_category": "Summarization & Reasoning",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "148",
+      "task_name": "Key Findings Summary",
+      "stage": "S3",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-flash",
+      "parent_category": "Summarization & Reasoning",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "181",
+      "task_name": "Latency SLO Monitor",
+      "stage": "S4",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-pro",
+      "parent_category": "Evaluation & Monitoring",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "182",
+      "task_name": "Cost Monitor",
+      "stage": "S4",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4o-mini",
+      "parent_category": "Evaluation & Monitoring",
+      "include_if": null,
+      "mvp_priceable": true
+    }
+  ],
+  "derived": {
+    "users": 100,
+    "rpm": 30,
+    "qpm": 30,
+    "num_requests": 3000,
+    "tokens_in": 500,
+    "tokens_out": 300,
+    "rag_enabled": true,
+    "translation_enabled": true,
+    "hosting": "api",
+    "compliance": "HIPAA",
+    "corpus_gb": 5.0,
+    "avg_chunk_tokens": 650,
+    "refresh_rate": "monthly"
+  },
+  "provenance": {
+    "llm_selection": {
+      "provider": "none",
+      "model": "(default)",
+      "mode": "full_catalog_minimal_fields",
+      "candidate_count": 184
+    },
+    "monitoring": {
+      "provider": "langsmith",
+      "tiering_used": false
+    },
+    "pricing": {
+      "source": "Excel/PRICING_DICT (models priced later in plan_and_cost)",
+      "version": "current-run"
+    },
+    "catalog": {
+      "path": "AI_Cost_Estimator_Catalog_UPDATED.xlsx",
+      "sheet": "Sheet1",
+      "row_count": 184
+    }
+  }
+}
