@@ -23,7 +23,15 @@ This folder stores all generated artifacts:
 - `run_meta.json` — metadata (provider, timestamp, etc.)
 
 ---
+## 🎥 Demo Video
 
+You can watch the complete 30-minute demo video on Google Drive using the link below:  
+👉 **[View the full demo on Google Drive](https://drive.google.com/file/d/1R5a-CEUYsN_agAPOhq_4JV1Nux45H4XW/view?usp=sharing)**
+
+> ℹ️ Note: Google Drive’s player doesn’t support playback speed control.  
+> For faster viewing, download the video and play it locally at 2× speed,  
+> or use a browser extension such as *Video Speed Controller*.
+---
 ## 📂 Repository Structure
 ```
 .
