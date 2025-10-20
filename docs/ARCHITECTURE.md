@@ -86,11 +86,11 @@ The **AI Cost Estimator** is a modular, Dockerized CLI application that collects
 
 ```mermaid
 flowchart TD
-    A[User Input via CLI] --> B[Intake Module]
-    B --> C[Task Detection (LLM)]
-    C --> D[Plan & Cost Computation]
-    D --> E[Report Generation]
-    E --> F[data/out/(timestamp)/]
+    A["User Input via CLI"] --> B["Intake Module"]
+    B --> C["Task Detection (LLM or rule-based)"]
+    C --> D["Plan &amp; Cost Computation"]
+    D --> E["Report Generation"]
+    E --> F["data/out/(timestamp)/"]
 ```
 
 **Explanation:**
