@@ -90,7 +90,7 @@ flowchart TD
     B --> C[Task Detection (LLM)]
     C --> D[Plan & Cost Computation]
     D --> E[Report Generation]
-    E --> F[data/out/<timestamp>/]
+    E --> F[data/out/(timestamp)/]
 ```
 
 **Explanation:**
