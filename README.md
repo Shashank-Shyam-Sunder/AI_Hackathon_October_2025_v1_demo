@@ -153,10 +153,12 @@ python -m src.app.cli.pipeline
 Outputs will still be saved to `data/out/`.
 
 ---
-
 ## 📘 Documentation
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for high-level design and pipeline flow.
+
+For a detailed overview of current issues, known limitations, and possible improvements,  
+please see [docs/CURRENT_ISSUES_AND_POSSIBLE_SOLUTIONS.md](docs/CURRENT_ISSUES_AND_POSSIBLE_SOLUTIONS.md).
 
 ---
 

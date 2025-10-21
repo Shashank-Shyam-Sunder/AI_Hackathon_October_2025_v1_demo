@@ -1,0 +1,190 @@
+{
+  "selected_tasks": [
+    {
+      "task_id": "35",
+      "task_name": "Named Entity Recognition",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "anthropic/claude-3.5-haiku",
+      "parent_category": "Information Extraction & Structuring",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "38",
+      "task_name": "PII Detection",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "cohere/command-r-plus-mini",
+      "parent_category": "Information Extraction & Structuring",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "50",
+      "task_name": "Medical Entity Extraction",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-pro",
+      "parent_category": "Information Extraction & Structuring",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "1",
+      "task_name": "Spelling Correction",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4o-mini",
+      "parent_category": "Text Cleaning & Normalization",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "2",
+      "task_name": "Grammar Fix",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4o-mini",
+      "parent_category": "Text Cleaning & Normalization",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "3",
+      "task_name": "Punctuation Normalization",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4.1-mini",
+      "parent_category": "Text Cleaning & Normalization",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "18",
+      "task_name": "Machine Translation (xx→en)",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "cohere/command-r-plus-mini",
+      "parent_category": "Translation & Language Adaptation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "19",
+      "task_name": "Machine Translation (en→xx)",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-flash",
+      "parent_category": "Translation & Language Adaptation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "20",
+      "task_name": "Tone Adaptation",
+      "stage": "S0",
+      "pricing_basis": "token",
+      "pricing_model_key": "google/gemini-1.5-pro",
+      "parent_category": "Translation & Language Adaptation",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "52",
+      "task_name": "Corpus Embedding (one-time)",
+      "stage": "S1",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4o-mini",
+      "parent_category": "Retrieval & Vector Indexing",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "54",
+      "task_name": "Semantic Search (query-time)",
+      "stage": "S1",
+      "pricing_basis": "token",
+      "pricing_model_key": "anthropic/claude-3.5-sonnet-mini",
+      "parent_category": "Retrieval & Vector Indexing",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "55",
+      "task_name": "Hybrid Search (BM25+Vector)",
+      "stage": "S1",
+      "pricing_basis": "token",
+      "pricing_model_key": "anthropic/claude-3.5-haiku",
+      "parent_category": "Retrieval & Vector Indexing",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "156",
+      "task_name": "Medical Note Expansion",
+      "stage": "S3",
+      "pricing_basis": "token",
+      "pricing_model_key": "mistral/mistral-large-mini",
+      "parent_category": "Domain-Specific Writing & Analysis",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "143",
+      "task_name": "Medical Report Summary",
+      "stage": "S3",
+      "pricing_basis": "token",
+      "pricing_model_key": "openai/gpt-4.1-mini",
+      "parent_category": "Summarization & Reasoning",
+      "include_if": null,
+      "mvp_priceable": true
+    },
+    {
+      "task_id": "144",
+      "task_name": "Research Paper Summary",
+      "stage": "S3",
+      "pricing_basis": "token",
+      "pricing_model_key": "anthropic/claude-3.5-sonnet-mini",
+      "parent_category": "Summarization & Reasoning",
+      "include_if": null,
+      "mvp_priceable": true
+    }
+  ],
+  "derived": {
+    "users": 100,
+    "rpm": 30,
+    "qpm": 30,
+    "num_requests": 3000,
+    "tokens_in": 500,
+    "tokens_out": 300,
+    "rag_enabled": true,
+    "translation_enabled": true,
+    "hosting": "api",
+    "compliance": "HIPAA",
+    "corpus_gb": 5.0,
+    "avg_chunk_tokens": 650,
+    "refresh_rate": "monthly"
+  },
+  "provenance": {
+    "llm_selection": {
+      "provider": "none",
+      "model": "(default)",
+      "mode": "full_catalog_minimal_fields",
+      "candidate_count": 184
+    },
+    "monitoring": {
+      "provider": "langsmith",
+      "tiering_used": false
+    },
+    "pricing": {
+      "source": "Excel/PRICING_DICT (models priced later in plan_and_cost)",
+      "version": "current-run"
+    },
+    "catalog": {
+      "path": "AI_Cost_Estimator_Catalog_UPDATED.xlsx",
+      "sheet": "Sheet1",
+      "row_count": 184
+    }
+  }
+}

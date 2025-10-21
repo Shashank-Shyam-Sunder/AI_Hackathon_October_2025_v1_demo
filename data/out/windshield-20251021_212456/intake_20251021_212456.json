@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "name": "Windshield"
+  },
+  "app_brief": "An AI search engine for medical research papers that finds and summarizes relevant studies.",
+  "traffic": {
+    "users": 100,
+    "rpm": 30,
+    "qpm": 30,
+    "tokens_in": 500,
+    "tokens_out": 300
+  },
+  "ops": {
+    "availability_target": 99.0,
+    "monitoring_tier": "Standard",
+    "compliance": "HIPAA"
+  },
+  "preferences": {
+    "hosting": "api"
+  },
+  "rag": {
+    "enabled": true,
+    "corpus_gb": 5.0,
+    "embed_model": null,
+    "refresh_rate": "monthly",
+    "avg_chunk_tokens": 650,
+    "chunk_granularity": "medium"
+  },
+  "i18n": {
+    "translation_required": true,
+    "language_pairs_raw": "English French",
+    "language_pairs": "English->French",
+    "language_pairs_parsed": [
+      {
+        "source": "English",
+        "target": "French"
+      }
+    ]
+  },
+  "internals": {
+    "monitoring": {
+      "provider": "langsmith",
+      "use_tiers": false
+    },
+    "guardrails_enabled": true,
+    "embedding_model_default": "text-embedding-3-large"
+  },
+  "detected_tasks": []
+}
